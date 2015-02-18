@@ -2,14 +2,12 @@
 
 #define MAX_DATASIZE 4194304
 
-#define PORT "4475"
-
 ProxyServer::~ProxyServer()
 {
     
 }
 
-void ProxyServer::sigchld_handler(int s)
+void sigchld_handler(int s)
 {
   while(waitpid(-1, NULL, WNOHANG) > 0);
 }
@@ -29,10 +27,10 @@ int ProxyServer::StartListen(const char* port){
   hints.ai_flags = AI_PASSIVE; // IP
   hints.ai_protocol = 0;
   
-  int error = getaddrinfo(NULL, PORT, &hints, &servinfo);
+  int error = getaddrinfo(NULL, port, &hints, &servinfo);
   if(error != 0){
     fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(error));
-    exit(1);
+    return -1;
   }
 
   // loop through all results and bind the first we can...
@@ -67,17 +65,23 @@ int ProxyServer::StartListen(const char* port){
   
   if( res == NULL ){
     fprintf(stderr, "server: failed to bind\n");
-    return 3;
+    return -1;
   }
   
   freeaddrinfo(servinfo); // all done with this structure
   
   if( listen( socket_listner, 10) == -1 ){ // 10 ==  how many pending connections queue will hold
     perror("listen");
-    return 4;
+    return -1;
   }
   
-  
+    sa.sa_handler = sigchld_handler; // reap all dead processes
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART;
+    if (sigaction(SIGCHLD, &sa, NULL) == -1) {
+        perror("sigaction");
+        exit(1);
+    }
   
   std::cout << ">> Listener successfully created.\n";
   return socket_listner;
@@ -110,59 +114,132 @@ int ProxyServer::AcceptConnections(int socket_listner){
 
 } // End of function
 
-void ProxyServer::RecieveMessage( std::string &message, const int client_socket ){
+std::string ProxyServer::RecieveMessage( const int client_socket ){
   
   int numbytes{};
-  char buffer[MAX_DATASIZE];
-  numbytes = recv(client_socket, buffer, MAX_DATASIZE-1, 0);
+  int MAX_BUFFER_SIZE = 4096;  
+  char buffer[MAX_BUFFER_SIZE];
+  std::string message = "";
   
-  if( numbytes == -1 ){
-    perror("recv");
-    //return char();
-  }
 
-  if(numbytes == 0){ // Connection is closed
-    close(client_socket);
-    exit(1);
+  std::cout <<  "Recieving...\n";
+  numbytes = recv(client_socket, buffer, sizeof buffer, 0);
+    
+  if ( numbytes == -1 ) {
+    perror("server: recv");
+    return "";
   }
-
-  buffer[numbytes] = '\0';
-
-  
-  message = std::string(buffer);
-  
-  //std::cout << "Number of bytes receved from client: " << numbytes << "| Buffer string: " << buffer << '\n';
-  
-  if( !IsValid(buffer) ){
-    std::cerr << "Cencured material!\n";
-    //return char();
-  }
+    
+  std::cout << "Bytes recieved from client: " << numbytes << '\n';
+    
+  message += std::string(buffer, buffer+numbytes);
+  message += '\0';
   
   std::cout << "Server: Recieve successfully!\n";
-  //return buffer;
+
+  return message;
 
 }
 
-bool ProxyServer::IsValid( const char* message ){
-  
-  return true;
 
-}
-
-int ProxyServer::Send( const int socket_client, const std::string &message, const int MAX_SIZE ){
+int ProxyServer::Send( const int socket_client, const std::string &message ){
   
-  //std::cout << "Server: Send: size of message = " << size << " \n Content:\n" << message << '\n';
-  const char* buffer = message.c_str();
-  size_t size = message.size();
+  SendAll( socket_client, message );
   
-  int error = send( socket_client, buffer, size, 0 );
-  //int error = send( socket_client, "HEY!", 4, 0 );
-  if( error == -1 ){
-    perror("send");
-    return 1;
-  }
   close(socket_client);
   std::cout << "Server: Send Successfully!\n"; 
   
+  return 0;
+}
+
+int ProxyServer::FormatHttpRequest( std::string &message, std::string &address ){
+  
+    std::string str = "";
+  
+    std::istringstream ss(message);
+    
+    //std::size_t end = message.find("\r\n\r\n");
+    //if(end != std::string::npos){
+    //  return -1;
+    //}
+    
+    message.clear();
+    message = "";
+    
+    while(ss >> str){
+      
+      std::string tmp{""};
+      std::string header;
+      
+      std::getline(ss, tmp, '\r');
+      
+      if(str == "GET" || str == "POST"){
+	std::string http;
+	std::size_t pos1 = tmp.find("http://");
+	if(pos1 != std::string::npos){
+	  std::size_t pos2 = tmp.find_first_of("/",pos1+7);
+	  if(pos2 != std::string::npos){
+	    tmp.erase(pos1, pos2-pos1);
+	  }
+	}
+	header = str + tmp;
+      }
+      else if(str == "HOST:" || str == "Host:" || str == "host:"){
+	header = str + tmp;
+	tmp.erase(remove_if(tmp.begin(), tmp.end(), isspace),tmp.end());
+	address = tmp;
+	
+      }
+      else if(str == "User-Agent:" || str == "user-agent:" || str == "USER-AGENT:"){
+	header = str + tmp;
+      }
+      else if(str == "Accept:" || str == "accept:" || str == "ACCEPT:"){
+	header = str + tmp;
+      }
+      else if(str == "Accept-Language:" || str == "accept-language:" || str == "ACCEPT-LANGUAGE:"){
+	header = str + tmp;
+      }
+      else if(str == "Accept-Encoding:" || str == "accept-encoding:" || str == "ACCEPT-ENCODING:"){
+	header = str + tmp;
+      }
+      else if(str == "DNT:" || str == "dnt:" || str == "Dnt:"){
+	header = str + " 1";
+      }
+      else if(str == "Cookie:" || str == "cookie:" || str == "COOKIE:"){
+	header = str + tmp;
+      }
+      else if(str == "Referer:" || str == "referer:" || str == "REFERER:"){
+	header = str + tmp;
+      }
+      else if(str == "Content-Length:" || str == "content-lenght:"){
+	header = str + tmp;
+      }
+      else if(str == "Content-Type:" || str == "content-type:"){
+	header = str + tmp;
+      }
+      else if(str == "Connection:" || str == "connection:" || str == "CONNECTION:"){
+	header = str + " close";
+      }
+      else if(str == "\r\n" ){
+	message += str;
+	break;
+      }
+      
+      message += header + "\r\n";
+      
+      getline(ss, tmp);
+      str.clear();
+    }
+    
+    if(!ss.eof()){
+      message += ss.str();
+    }
+    
+    //message += "\r\n";
+    
+    if( address.empty() || message.size() < 10)
+      return -1;
+    //std::cout << buffer << std::endl;
+
   return 0;
 }

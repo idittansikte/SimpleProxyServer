@@ -15,16 +15,16 @@ public:
   int AcceptConnections(int socket_listner);
   
   // Get the client message
-  void RecieveMessage( std::string &message, const int client_socket );
+  std::string RecieveMessage( const int client_socket );
   
   // Send response to client
-  int Send( const int socket_client, const std::string &message, const int MAX_SIZE  );
+  int Send( const int socket_client, const std::string &message );
+  
+  int FormatHttpRequest( std::string &message, std::string &address );
   
 
-private:    
-    void sigchld_handler(int s);
-
-    bool IsValid(const char* message);
+private:
+    
 };
 
 #endif

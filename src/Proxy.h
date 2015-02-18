@@ -26,12 +26,11 @@ public:
 
   void *get_in_addr(struct sockaddr *sa);
   
-  bool CheckBadWords( std::string & message );
-  
   int EditGETLine( std::string &message, std::string &address );
   
+  void SendAll(const int socket, const std::string &http_message );
+  
 private:
-    bool SearchBadWords( const std::string & message );
 };
 
 #endif
