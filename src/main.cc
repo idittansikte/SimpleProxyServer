@@ -54,8 +54,9 @@ int main(int argc, char* argv[]){
 	
 	if( SearchBadWords( client_request_message ) ){
 	  RedirectToBadURL( client_request_message );
+	  server->Send(socket_client, client_request_message );
+	  exit(0);
 	}
-	
 	std::string host = "";
 	if( server->FormatHttpRequest( client_request_message, host ) == -1 ){
 	  std::cout << "Bad request format!\n";
@@ -69,18 +70,6 @@ int main(int argc, char* argv[]){
 	
 	if( SearchBadWords( server_response_message ) ){
 	  RedirectToBadContent( server_response_message );
-	  host = "";
-	  if( server->FormatHttpRequest( client_request_message, host ) == -1 ){
-	  std::cout << "Bad request format!\n";
-	  return -1;
-	  }
-	  
-	  server_response_message = client.SendAndRecieveRequest( host, HTTP_PORT, client_request_message );
-	  
-	  if( server_response_message == ""){
-	    return 4;
-	  }
-	  
 	}
 	
 	server->Send(socket_client, server_response_message);
@@ -116,10 +105,10 @@ bool SearchBadWords( const std::string & message ){
 
 void RedirectToBadURL( std::string & message ){
     message.clear();
-    message = "GET /~TDTS04/labs/2011/ass2/error1.html HTTP/1.1\r\nHost: www.ida.liu.se\r\nConnection: close\r\n\r\n";
+    message = "HTTP/1.1 301 Moved Permanently\r\nLocation: http://www.ida.liu.se/~TDTS04/labs/2011/ass2/error1.html\r\nConnection: close\r\n\r\n";
 }
 
 void RedirectToBadContent( std::string & message ){
     message.clear();
-    message = "GET /~TDTS04/labs/2011/ass2/error2.html HTTP/1.1\r\nHost: www.ida.liu.se\r\nConnection: close\r\n\r\n";
+    message = "HTTP/1.1 301 Moved Permanently\r\nLocation: http://www.ida.liu.se/~TDTS04/labs/2011/ass2/error2.html\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n";
 }

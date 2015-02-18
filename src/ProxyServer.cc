@@ -34,7 +34,7 @@ int ProxyServer::StartListen(const char* port){
   }
 
   // loop through all results and bind the first we can...
-  for(res = servinfo; res != nullptr; res = res->ai_next){
+  for(res = servinfo; res != NULL; res = res->ai_next){
     
     socket_listner = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if( socket_listner == -1 ){
@@ -45,7 +45,7 @@ int ProxyServer::StartListen(const char* port){
     
     // Set socket options
     int yes = 1;
-    int sockopt = setsockopt(socket_listner, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+    int sockopt = setsockopt(socket_listner, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
     if(sockopt == -1){
       perror("setsockopt");
       exit(1);
@@ -153,91 +153,137 @@ int ProxyServer::Send( const int socket_client, const std::string &message ){
 }
 
 int ProxyServer::FormatHttpRequest( std::string &message, std::string &address ){
-  
-    std::string str = "";
-  
-    std::istringstream ss(message);
     
-    //std::size_t end = message.find("\r\n\r\n");
-    //if(end != std::string::npos){
-    //  return -1;
-    //}
-    
-    message.clear();
-    message = "";
-    
-    while(ss >> str){
-      
-      std::string tmp{""};
-      std::string header;
-      
-      std::getline(ss, tmp, '\r');
-      
-      if(str == "GET" || str == "POST"){
-	std::string http;
-	std::size_t pos1 = tmp.find("http://");
-	if(pos1 != std::string::npos){
-	  std::size_t pos2 = tmp.find_first_of("/",pos1+7);
-	  if(pos2 != std::string::npos){
-	    tmp.erase(pos1, pos2-pos1);
-	  }
+    std::string header = "Host:";
+    size_t pos = message.find(header);
+    if( pos != std::string::npos ){
+
+      char hostname[50];
+      std::size_t end = message.find_first_of('\r', pos);
+      std::size_t len = message.copy(hostname, end - pos - header.size() - 1 ,pos + header.size() + 1 );
+      hostname[len] = '\0';
+      address = std::string(hostname, hostname+len);
+      std::cout << "Hostname found: " << address << '\n'; 
+      header = "GET";
+      pos = message.find(header);
+      if( pos != std::string::npos ){
+
+	end = message.find_first_of('\r', pos);
+	char array[200];
+	len = message.copy(array, end - pos - header.size() - 1, pos + header.size() + 1 );
+	array[len] = '\0';
+	std::string tmp = std::string(array, array+len);
+	std::cout << "GET line: " << tmp << '\n'; 
+
+	std::size_t check = tmp.find(address);
+	if( check != std::string::npos ){
+	  message.replace( pos + header.size() + 1, check + address.size() - pos, "" );
 	}
-	header = str + tmp;
+	else{
+	  std::cerr << "No "<< address << " after GET.\n";
+	  return -1;
+	}
       }
-      else if(str == "HOST:" || str == "Host:" || str == "host:"){
-	header = str + tmp;
-	tmp.erase(remove_if(tmp.begin(), tmp.end(), isspace),tmp.end());
-	address = tmp;
-	
+      else{
+	std::cerr << "Could not find any \"GET\" in HTTP request...!\n";
+	return -1;
       }
-      else if(str == "User-Agent:" || str == "user-agent:" || str == "USER-AGENT:"){
-	header = str + tmp;
-      }
-      else if(str == "Accept:" || str == "accept:" || str == "ACCEPT:"){
-	header = str + tmp;
-      }
-      else if(str == "Accept-Language:" || str == "accept-language:" || str == "ACCEPT-LANGUAGE:"){
-	header = str + tmp;
-      }
-      else if(str == "Accept-Encoding:" || str == "accept-encoding:" || str == "ACCEPT-ENCODING:"){
-	header = str + tmp;
-      }
-      else if(str == "DNT:" || str == "dnt:" || str == "Dnt:"){
-	header = str + " 1";
-      }
-      else if(str == "Cookie:" || str == "cookie:" || str == "COOKIE:"){
-	header = str + tmp;
-      }
-      else if(str == "Referer:" || str == "referer:" || str == "REFERER:"){
-	header = str + tmp;
-      }
-      else if(str == "Content-Length:" || str == "content-lenght:"){
-	header = str + tmp;
-      }
-      else if(str == "Content-Type:" || str == "content-type:"){
-	header = str + tmp;
-      }
-      else if(str == "Connection:" || str == "connection:" || str == "CONNECTION:"){
-	header = str + " close";
-      }
-      else if(str == "\r\n" ){
-	message += str;
-	break;
-      }
-      
-      message += header + "\r\n";
-      
-      getline(ss, tmp);
-      str.clear();
     }
+    else{
+      std::cerr << "Could not find any hostname...!\n";
+      return -1;
+    }
+
+    // Set connection to close...
+    header = "Connection:";
+    pos = message.find(header);
+    if( pos != std::string::npos ){
+      size_t end = message.find_first_of("\r", pos);
+      message.replace( pos+header.size() + 1, end - pos - header.size() - 1, "close");
+    }
+    else{
+      std::cerr << "Could not find Connection header in request...\n";
+      return -1;
+    }
+
+    std::cout << "Here come the whole message: \n" << message;
+
+    // message.clear();
+    // message = "";
     
-    if(!ss.eof()){
-      message += ss.str();
-    }
+    // while(ss >> str){
+      
+    //   std::string tmp{""};
+    //   std::string header;
+      
+    //   std::getline(ss, tmp, '\r');
+      
+
+    //   if(str == "GET" || str == "POST"){
+    // 	std::string http;
+    // 	std::size_t pos1 = tmp.find("http://");
+    // 	if(pos1 != std::string::npos){
+    // 	  std::size_t pos2 = tmp.find_first_of("/",pos1+7);
+    // 	  if(pos2 != std::string::npos){
+    // 	    tmp.erase(pos1, pos2-pos1);
+    // 	  }
+    // 	}
+    // 	header = str + tmp;
+    //   }
+    //   else if(str == "HOST:" || str == "Host:" || str == "host:"){
+    // 	header = str + tmp;
+    // 	tmp.erase(remove_if(tmp.begin(), tmp.end(), isspace),tmp.end());
+    // 	address = tmp;
+	
+    //   }
+    //   else if(str == "User-Agent:" || str == "user-agent:" || str == "USER-AGENT:"){
+    // 	header = str + tmp;
+    //   }
+    //   else if(str == "Accept:" || str == "accept:" || str == "ACCEPT:"){
+    // 	header = str + tmp;
+    //   }
+    //   else if(str == "Accept-Language:" || str == "accept-language:" || str == "ACCEPT-LANGUAGE:"){
+    // 	header = str + tmp;
+    //   }
+    //   else if(str == "Accept-Encoding:" || str == "accept-encoding:" || str == "ACCEPT-ENCODING:"){
+    // 	header = str + tmp;
+    //   }
+    //   else if(str == "DNT:" || str == "dnt:" || str == "Dnt:"){
+    // 	header = str + " 1";
+    //   }
+    //   else if(str == "Cookie:" || str == "cookie:" || str == "COOKIE:"){
+    // 	header = str + tmp;
+    //   }
+    //   else if(str == "Referer:" || str == "referer:" || str == "REFERER:"){
+    // 	header = str + tmp;
+    //   }
+    //   else if(str == "Content-Length:" || str == "content-lenght:"){
+    // 	header = str + tmp;
+    //   }
+    //   else if(str == "Content-Type:" || str == "content-type:"){
+    // 	header = str + tmp;
+    //   }
+    //   else if(str == "Connection:" || str == "connection:" || str == "CONNECTION:"){
+    // 	header = str + " close";
+    //   }
+    //   else if(str == "\r\n" ){
+    // 	message += str;
+    // 	break;
+    //   }
+      
+    //   message += header + "\r\n";
+      
+    //   getline(ss, tmp);
+    //   str.clear();
+    // }
+    
+    // if(!ss.eof()){
+    //   message += ss.str();
+    // }
     
     //message += "\r\n";
     
-    if( address.empty() || message.size() < 10)
+    if( address.empty() || message.size() < 8)
       return -1;
     //std::cout << buffer << std::endl;
 
