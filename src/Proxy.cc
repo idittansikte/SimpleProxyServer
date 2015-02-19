@@ -24,8 +24,8 @@ void Proxy::SendAll(const int socket, const std::string &http_message ){
     int bytesent = send( socket, buffer, size - i , MSG_NOSIGNAL );
     
     if( bytesent == -1 ){
-      perror("client: send");
-      return;
+      perror("send");
+      exit(1);
     }
     else{
       i += bytesent;

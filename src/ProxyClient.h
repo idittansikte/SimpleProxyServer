@@ -16,8 +16,6 @@ public:
   int Recieve(int socket_server, std::string &message);
   
   int FormatHttpResponse( std::string &message );
-  
-  std::string SendAndRecieveRequest( const std::string &host, char *port, const std::string &client_request_message );
 
 private:
   //char* m_sock_fd;

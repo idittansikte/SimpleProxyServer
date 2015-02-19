@@ -122,7 +122,7 @@ std::string ProxyServer::RecieveMessage( const int client_socket ){
   std::string message = "";
   
 
-  std::cout <<  "Recieving...\n";
+  std::cout <<  "Recieving from client...\n";
   numbytes = recv(client_socket, buffer, sizeof buffer, 0);
     
   if ( numbytes == -1 ) {
@@ -135,7 +135,7 @@ std::string ProxyServer::RecieveMessage( const int client_socket ){
   message += std::string(buffer, buffer+numbytes);
   message += '\0';
   
-  std::cout << "Server: Recieve successfully!\n";
+  //std::cout << "Server: Recieve successfully!\n";
 
   return message;
 
@@ -146,8 +146,8 @@ int ProxyServer::Send( const int socket_client, const std::string &message ){
   
   SendAll( socket_client, message );
   
-  close(socket_client);
-  std::cout << "Server: Send Successfully!\n"; 
+  //close(socket_client);
+  //std::cout << "Server: Send Successfully!\n"; 
   
   return 0;
 }
@@ -163,7 +163,7 @@ int ProxyServer::FormatHttpRequest( std::string &message, std::string &address )
       std::size_t len = message.copy(hostname, end - pos - header.size() - 1 ,pos + header.size() + 1 );
       hostname[len] = '\0';
       address = std::string(hostname, hostname+len);
-      std::cout << "Hostname found: " << address << '\n'; 
+      //std::cout << "Hostname found: " << address << '\n'; 
       header = "GET";
       pos = message.find(header);
       if( pos != std::string::npos ){
@@ -173,7 +173,7 @@ int ProxyServer::FormatHttpRequest( std::string &message, std::string &address )
 	len = message.copy(array, end - pos - header.size() - 1, pos + header.size() + 1 );
 	array[len] = '\0';
 	std::string tmp = std::string(array, array+len);
-	std::cout << "GET line: " << tmp << '\n'; 
+	//std::cout << "GET line: " << tmp << '\n'; 
 
 	std::size_t check = tmp.find(address);
 	if( check != std::string::npos ){
@@ -206,86 +206,10 @@ int ProxyServer::FormatHttpRequest( std::string &message, std::string &address )
       return -1;
     }
 
-    std::cout << "Here come the whole message: \n" << message;
-
-    // message.clear();
-    // message = "";
-    
-    // while(ss >> str){
-      
-    //   std::string tmp{""};
-    //   std::string header;
-      
-    //   std::getline(ss, tmp, '\r');
-      
-
-    //   if(str == "GET" || str == "POST"){
-    // 	std::string http;
-    // 	std::size_t pos1 = tmp.find("http://");
-    // 	if(pos1 != std::string::npos){
-    // 	  std::size_t pos2 = tmp.find_first_of("/",pos1+7);
-    // 	  if(pos2 != std::string::npos){
-    // 	    tmp.erase(pos1, pos2-pos1);
-    // 	  }
-    // 	}
-    // 	header = str + tmp;
-    //   }
-    //   else if(str == "HOST:" || str == "Host:" || str == "host:"){
-    // 	header = str + tmp;
-    // 	tmp.erase(remove_if(tmp.begin(), tmp.end(), isspace),tmp.end());
-    // 	address = tmp;
-	
-    //   }
-    //   else if(str == "User-Agent:" || str == "user-agent:" || str == "USER-AGENT:"){
-    // 	header = str + tmp;
-    //   }
-    //   else if(str == "Accept:" || str == "accept:" || str == "ACCEPT:"){
-    // 	header = str + tmp;
-    //   }
-    //   else if(str == "Accept-Language:" || str == "accept-language:" || str == "ACCEPT-LANGUAGE:"){
-    // 	header = str + tmp;
-    //   }
-    //   else if(str == "Accept-Encoding:" || str == "accept-encoding:" || str == "ACCEPT-ENCODING:"){
-    // 	header = str + tmp;
-    //   }
-    //   else if(str == "DNT:" || str == "dnt:" || str == "Dnt:"){
-    // 	header = str + " 1";
-    //   }
-    //   else if(str == "Cookie:" || str == "cookie:" || str == "COOKIE:"){
-    // 	header = str + tmp;
-    //   }
-    //   else if(str == "Referer:" || str == "referer:" || str == "REFERER:"){
-    // 	header = str + tmp;
-    //   }
-    //   else if(str == "Content-Length:" || str == "content-lenght:"){
-    // 	header = str + tmp;
-    //   }
-    //   else if(str == "Content-Type:" || str == "content-type:"){
-    // 	header = str + tmp;
-    //   }
-    //   else if(str == "Connection:" || str == "connection:" || str == "CONNECTION:"){
-    // 	header = str + " close";
-    //   }
-    //   else if(str == "\r\n" ){
-    // 	message += str;
-    // 	break;
-    //   }
-      
-    //   message += header + "\r\n";
-      
-    //   getline(ss, tmp);
-    //   str.clear();
-    // }
-    
-    // if(!ss.eof()){
-    //   message += ss.str();
-    // }
-    
-    //message += "\r\n";
+    //std::cout << "#####################\nHere come the whole message: \n" << message << "#####################\n";
     
     if( address.empty() || message.size() < 8)
       return -1;
-    //std::cout << buffer << std::endl;
 
   return 0;
 }
