@@ -13,20 +13,20 @@ There is a Makefile in the folder that are used to compile. Use following comman
 
 _Compile code:_
 
-$ make
+    $ make
 
 _Run proxy server:_
 
-$ ./proxy <port no> <blocked word> <blocked word>
+    $ ./proxy <port no> <blocked word> <blocked word>
 
 Alternatives:
 
-$ ./proxy <port no>		## No blocked words
-$ ./proxy 			## Will automatically set port number to 9000 with no blocked words
+    $ ./proxy <port no>		## No blocked words
+    $ ./proxy 			## Will automatically set port number to 9000 with no blocked words
 
 Example:
 
-$ ./proxy 4475 spongebob donaldduck britneyspears
+    $ ./proxy 4475 spongebob donaldduck britneyspears
 
 Note that no uppercase words will work and spaces will make it into two words.
 
