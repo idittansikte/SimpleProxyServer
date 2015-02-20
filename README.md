@@ -8,13 +8,13 @@ Support blocked words, you can define any bad words that not are allowed but typ
 If user types in the blocked word in URL or gets it in content, user is redirected to an error page.
 
 ################################################################
-How to compile and run
+##How to compile and run
 There is a Makefile in the folder that are used to compile. Use following commands:
 
-Compile code:
+_Compile code:_
 $ make
 
-Run proxy server:
+_Run proxy server:_
 $ ./proxy <port no> <blocked word> <blocked word>
 Alternatives:
 $ ./proxy <port no>		## No blocked words
@@ -25,7 +25,7 @@ $ ./proxy 4475 spongebob donaldduck britneyspears
 
 Note that no uppercase words will work and spaces will make it into two words.
 
-How to configure Web Browser
+##How to configure Web Browser
 
 Firefox:
 Select Menu->Settings.
@@ -35,7 +35,7 @@ Select “Manual proxy configurations”
 At field “HTTP-proxy” enter the hostname and port where the proxy server is running. (eg hostname: 127.0.0.1 port: 9000)
 Make sure SSL, FTP and SOCKS protocol fields are empty and also the white box under.
 
-How to configure Firefox to use HTTP/1.0
+##How to configure Firefox to use HTTP/1.0
 Proxy server can handle HTTP/1.1 so there is no need to do this. If you want to anyway, follow these steps:
 Type “about:config” in the title bar.
 Search for “network.http.proxy”.
