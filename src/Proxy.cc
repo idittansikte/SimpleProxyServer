@@ -347,14 +347,14 @@ bool Proxy::GetDataFromServerAndDeliverToClient( const std::string &host, const 
   
   std::string server_response_message = "";
   
-  // ------ Establish connection with server ------ //
+  // ---- Establish connection with server ---- //
   int socket_server = EstablishConnection( host );
   if( socket_server == -1 ){
     close(socket_server);
     return false;
   }
   
-  // ------ Send request to server ------ //
+  // ---- Send request to server ----- //
   SendAll( socket_server, client_request_message );
   
   bool doOnce = false;
@@ -362,14 +362,14 @@ bool Proxy::GetDataFromServerAndDeliverToClient( const std::string &host, const 
   int totnumbytes{};
   std::string textbuffer{};
   
+  // ---- Loop till whole packet is received ---- //
   while( true ){
-    
     
     int numbytes{};
     int MAX_BUFFER_SIZE = 4096;  
     char buffer[MAX_BUFFER_SIZE];
     
-    // ------- Recieve one segment ------- //
+    // ---- Recieve one segment ---- //
     numbytes = recv(socket_server, buffer, sizeof buffer, 0);
     
     if ( numbytes == -1 ) {
@@ -377,11 +377,11 @@ bool Proxy::GetDataFromServerAndDeliverToClient( const std::string &host, const 
       return -1;
     }
     
-    // ------ Convert char array (packet) to string for easier text manipulation ------ //
+    // ---- Convert char array (packet) to string for easier text manipulation ---- //
     server_response_message = std::string(buffer, buffer+numbytes);
     totnumbytes += numbytes; // Count total recieved bytes for debugging
     
-    //------ Check if content type => text. This is done only once because Content-Type header is only in the first segment ------//
+    // ---- Check if content type => text. This is done only once because Content-Type header is only in the first segment ---- //
     if(doOnce == false){
       doOnce = true;
       isText = plainText(server_response_message);
@@ -395,19 +395,19 @@ bool Proxy::GetDataFromServerAndDeliverToClient( const std::string &host, const 
       
       textbuffer += server_response_message;
       std::cout << "Buffering text... Bytes: " << textbuffer.size() << "\n";
-      // ------- If not whole text packet in buffer, continue recieve... ------- //
+      // ---- If not whole text packet in buffer, continue recieve... ---- //
       if( numbytes != 0 ){ 
 	continue;
       }
       
-      // ------ The whole text is now in buffer, start scan: ------ //
+      // ---- The whole text is now in buffer, start scan: ---- //
       std::cout << "Searching in text for bad words..\n";
       if( SearchBadWords( textbuffer ) ){
 	std::cout << "OBS! OBS! BADWORDS IN CONTENT! " << "\n";
 	SendAll(socket_client, BAD_CONTENT);
 	return true;
       }
-      // ------- Send whole text-buffer then break loop ------- //
+      // ---- Send whole text-buffer then break loop ---- //
       SendAll(socket_client, textbuffer);
       break;
     }
@@ -416,7 +416,7 @@ bool Proxy::GetDataFromServerAndDeliverToClient( const std::string &host, const 
       break;
     }
     
-    // ------- Send all non text segment directly ------- //
+    // ---- Send all non text segment directly ---- //
     SendAll(socket_client, server_response_message);
     
   } // End of while loop...
