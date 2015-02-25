@@ -145,13 +145,14 @@ void Proxy::SendAll(const int socket, const std::string &http_message ){
 }
 
 int Proxy::FormatRequestHeaders( std::string &message, std::string &address ){
-    
+  std::cout << "1\n";
     // ---- Find host headers position ---- //
     std::string header = "Host:";
     size_t pos = message.find(header);
     if( pos != std::string::npos ){
       // ---- Find end of row and then locate and save hostname ---- //
-      char hostname[50];
+      char hostname[100];
+      std::cout << "2\n";
       std::size_t end = message.find_first_of('\r', pos);
       std::size_t len = message.copy(hostname, end - pos - header.size() - 1 ,pos + header.size() + 1 );
       hostname[len] = '\0';
@@ -162,7 +163,8 @@ int Proxy::FormatRequestHeaders( std::string &message, std::string &address ){
       if( pos != std::string::npos ){
 	// ---- Find end of row and copy whole line into a new string for searching purposes ---- //
 	end = message.find_first_of('\r', pos);
-	char array[200];
+	std::cout << "3\n";
+	char array[1000];
 	len = message.copy(array, end - pos - header.size() - 1, pos + header.size() + 1 );
 	array[len] = '\0';
 	std::string tmp = std::string(array, array+len);
@@ -186,7 +188,7 @@ int Proxy::FormatRequestHeaders( std::string &message, std::string &address ){
       std::cerr << "Could not find any hostname...!\n";
       return -1;
     }
-
+    std::cout << "4\n";
     // Set connection to close...
     header = "Connection:";
     pos = message.find(header);
@@ -212,10 +214,12 @@ bool Proxy::SearchBadWords( const std::string & message ){
   // ---- Make all characters lowercase for easier handling ---- //
   transform(str.begin(), str.end(), str.begin(), tolower);
   // ---- Erase all spaces to make it easier and to make find() work properly for our puropse ---- //
-  str.erase(remove_if(str.begin(), str.end(), isspace),str.end());
+  //str.erase(remove_if(str.begin(), str.end(), isspace),str.end());
   
+  std::vector<std::string> v{"spongebob", "britney spears", "britneyspears" ,"norrköping"};
+
   // ---- Iterate through all bad words and seek through message ---- //
-  for( auto it : badwords){
+  for( auto it : v){
     std::size_t found = str.find(it);
     if( found != std::string::npos ){
       return true;
@@ -244,20 +248,21 @@ int Proxy::HandleRequest( const int socket_client ){
   // ---- Convert char array to string ---- //
   request += std::string(buffer, buffer+numbytes);
   request += '\0';
-  
+
+  std::cout << "DEBUG: searching bad words\n";
   // ---- If request contains bad words, send back redirection ---- //
   if( SearchBadWords( request ) ){
     SendAll(socket_client, BAD_URL);
     return 0;
   }
-  
+  std::cout << "DEBUG: formatting heades\n";
   // ---- Format headers, and get hostname ---- //
   std::string hostname{};
   if( FormatRequestHeaders( request, hostname ) == -1 ){
     std::cout << ">> Failed to format request, canceling request...\n";
     return 2;
   }
-  
+    std::cout << "DEBUG: server stuff..\n";
   // ---- Send request to host/server and deliver the responce to client ---- //
   if ( !GetDataFromServerAndDeliverToClient( hostname, socket_client, request ) ){
     std::cout << "Transmission from server to client went wrong \n";

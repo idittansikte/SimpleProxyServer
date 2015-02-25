@@ -3,7 +3,7 @@
 #include <iostream>
 #include "Proxy.h"
 #include <unistd.h> // Close, Fork
-
+#include <algorithm>
 int main(int argc, char* argv[]){
   
   char port[6];
@@ -28,7 +28,7 @@ int main(int argc, char* argv[]){
   
   // ---- Insert all bad words in argument into vector ---- //
   if(argc >= 3){
-    for( unsigned int i = 3; i < argc; ++ i){
+    for( unsigned int i = 3; i < argc; i++){
       bad_words.push_back(argv[i]);
     }
   }
