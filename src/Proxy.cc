@@ -164,7 +164,7 @@ int Proxy::FormatRequestHeaders( std::string &message, std::string &address ){
 	// ---- Find end of row and copy whole line into a new string for searching purposes ---- //
 	end = message.find_first_of('\r', pos);
 	std::cout << "3\n";
-	char array[1000];
+	char array[2000];
 	len = message.copy(array, end - pos - header.size() - 1, pos + header.size() + 1 );
 	array[len] = '\0';
 	std::string tmp = std::string(array, array+len);
@@ -329,7 +329,7 @@ int Proxy::plainText( const std::string &server_response_message ){
   
   // ---- Find header Content-Type to see if responce is text or not ---- //
   int isText = 0;
-  std::size_t start = server_response_message.find("Content-Type:") + 1;
+  std::size_t start = server_response_message.find("Content-Type:");
   if( start != std::string::npos ){
     std::size_t end = server_response_message.find("\r\n", start);
     if( end != std::string::npos ){
@@ -344,7 +344,21 @@ int Proxy::plainText( const std::string &server_response_message ){
     std::cerr << "Bad Request: Could not find any Content-Type. Aborted!\n";
     return -1;
   }
-  
+
+  // ---- Find header Content-Encoding to see if responce is gzip ---- //
+  if(isText == 1){
+    std::size_t start = server_response_message.find("Content-Encoding:");
+    if( start != std::string::npos ){
+      std::size_t end = server_response_message.find("\r\n", start);
+      if( end != std::string::npos ){
+	std::string str = server_response_message.substr(start, end - start);
+	std::size_t found = str.find("gzip");
+	if( found != std::string::npos ){
+	  isText = 0;
+	}
+      }
+    }
+  }
   return isText;
 }
 
@@ -406,7 +420,7 @@ bool Proxy::GetDataFromServerAndDeliverToClient( const std::string &host, const 
       }
       
       // ---- The whole text is now in buffer, start scan: ---- //
-      std::cout << "Searching in text for bad words..\n";
+      std::cout << "Searching in content for bad words..\n";
       if( SearchBadWords( textbuffer ) ){
 	std::cout << "OBS! OBS! BADWORDS IN CONTENT! " << "\n";
 	SendAll(socket_client, BAD_CONTENT);
